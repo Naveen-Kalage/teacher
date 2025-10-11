@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'login_page.dart';
 import 'dashboard_page.dart';
 import 'classes_page.dart';
 import 'students_page.dart';
@@ -6,6 +7,7 @@ import 'resources_page.dart';
 import 'schedule_page.dart';
 import 'discussions_page.dart';
 import 'organizations_page.dart';
+import 'auth_service.dart';
 
 void main() {
   runApp(const StaffRoomApp());
@@ -22,8 +24,53 @@ class StaffRoomApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF5C6BC0)),
         useMaterial3: true,
       ),
-      home: const HomeScreen(),
+      home: const AuthWrapper(),
+      routes: {
+        '/home': (context) => const HomeScreen(),
+        '/login': (context) => const LoginPage(),
+      },
     );
+  }
+}
+
+class AuthWrapper extends StatefulWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  bool _isLoading = true;
+  bool _isLoggedIn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAuthStatus();
+  }
+
+  Future<void> _checkAuthStatus() async {
+    final isLoggedIn = await AuthService.isLoggedIn();
+    setState(() {
+      _isLoggedIn = isLoggedIn;
+      _isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF5C6BC0)),
+          ),
+        ),
+      );
+    }
+
+    return _isLoggedIn ? const HomeScreen() : const LoginPage();
   }
 }
 
@@ -102,6 +149,22 @@ class _SideMenu extends StatelessWidget {
               label: 'Organizations',
               pageBuilder: (ctx) => const OrganizationsPage(),
             ),
+            const SizedBox(height: 24),
+            const Divider(),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: const Text(
+                'Logout',
+                style: TextStyle(color: Colors.red),
+              ),
+              onTap: () async {
+                await AuthService.clearLoginData();
+                if (context.mounted) {
+                  Navigator.of(context).pushReplacementNamed('/login');
+                }
+              },
+            ),
           ],
         ),
       ),
@@ -134,5 +197,7 @@ class _SideMenu extends StatelessWidget {
     );
   }
 }
+
+
 
 
